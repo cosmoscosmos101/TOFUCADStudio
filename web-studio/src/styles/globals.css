@@ -1,0 +1,667 @@
+/* ═══════════════════════════════════════════════
+   TOFU CAD STUDIO — Global Design System
+   Aesthetic: Neural Bloom — Pastel Cyber Anime
+   Deep indigo void. Lavender data streams.
+   Sakura bloom collisions. Aqua signal traces.
+   ═══════════════════════════════════════════════ */
+
+@import url('https://fonts.googleapis.com/css2?family=Zen+Dots&family=Sora:wght@300;400;500;600;700&family=JetBrains+Mono:ital,wght@0,300;0,400;0,500;1,300&display=swap');
+
+/* ── Houdini: Animatable XP fill ── */
+@property --xp-fill {
+  syntax: '<percentage>';
+  inherits: false;
+  initial-value: 0%;
+}
+
+/* ── Design Tokens ── */
+:root {
+  /* Backgrounds — deep indigo starfield */
+  --bg-void:     #060612;
+  --bg-base:     #0b0921;
+  --bg-surface:  #100e2a;
+  --bg-elevated: #181534;
+  --bg-modal:    rgba(10, 8, 30, 0.95);
+
+  /* Lavender — primary accent (remaps --cyan system) */
+  --cyan:        #c4b0ff;
+  --cyan-mid:    #a090e4;
+  --cyan-dim:    rgba(196, 176, 255, 0.12);
+  --cyan-glow:   rgba(196, 176, 255, 0.30);
+  --cyan-halo:   rgba(196, 176, 255, 0.05);
+
+  /* Sakura Pink — secondary accent (remaps --magenta system) */
+  --magenta:      #ffadd4;
+  --magenta-dim:  rgba(255, 173, 212, 0.12);
+  --magenta-glow: rgba(255, 173, 212, 0.28);
+
+  /* Named aliases — anime palette */
+  --lavender:        #c4b0ff;
+  --lavender-bright: #ddd0ff;
+  --lavender-dim:    rgba(196, 176, 255, 0.12);
+  --lavender-glow:   rgba(196, 176, 255, 0.30);
+  --sakura:          #ffadd4;
+  --sakura-bright:   #ffd0e8;
+  --sakura-dim:      rgba(255, 173, 212, 0.12);
+  --sakura-glow:     rgba(255, 173, 212, 0.28);
+  --aqua:            #80f0e0;
+  --aqua-dim:        rgba(128, 240, 224, 0.12);
+  --aqua-glow:       rgba(128, 240, 224, 0.24);
+
+  /* Legacy remap — keeps inline styles working without changes */
+  --amber:        #c4b0ff;
+  --amber-bright: #ddd0ff;
+  --amber-dim:    rgba(196, 176, 255, 0.12);
+  --amber-glow:   rgba(196, 176, 255, 0.30);
+  --forest:       #80f0e0;
+  --forest-dim:   rgba(128, 240, 224, 0.12);
+  --ember:        #ff88aa;
+  --ember-dim:    rgba(255, 136, 170, 0.14);
+  --rune:         #c4b0ff;
+
+  /* Stardust — achievement / XP */
+  --gold:        #fde68a;
+  --gold-glow:   rgba(253, 230, 138, 0.32);
+
+  /* Status */
+  --success:     #80f0c8;
+  --warning:     #fde68a;
+  --error:       #ff88aa;
+
+  /* Text — pale starlight */
+  --text-primary:   #ede8ff;
+  --text-secondary: #8070b8;
+  --text-accent:    var(--lavender);
+  --text-dim:       #38306a;
+
+  /* Borders — holographic filigree */
+  --border-subtle:  rgba(196, 176, 255, 0.08);
+  --border-default: rgba(196, 176, 255, 0.18);
+  --border-active:  rgba(255, 173, 212, 0.55);
+  --border-magenta: rgba(255, 173, 212, 0.38);
+
+  /* Typography — anime + futuristic stack */
+  --font-display: 'Zen Dots', 'Sora', sans-serif;
+  --font-ui:      'Sora', sans-serif;
+  --font-body:    'Sora', sans-serif;
+  --font-mono:    'JetBrains Mono', 'Courier New', monospace;
+
+  /* Spacing */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-6: 24px;
+  --space-8: 32px;
+
+  /* Transitions */
+  --transition-fast:   150ms cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-medium: 300ms cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-slow:   500ms cubic-bezier(0.4, 0, 0.2, 1);
+
+  /* Panel shapes — chamfered holographic display */
+  --clip-panel: polygon(
+    12px 0, calc(100% - 12px) 0,
+    100% 12px, 100% calc(100% - 12px),
+    calc(100% - 12px) 100%, 12px 100%,
+    0 calc(100% - 12px), 0 12px
+  );
+  --clip-btn: polygon(6px 0, 100% 0, 100% calc(100% - 6px), calc(100% - 6px) 100%, 0 100%, 0 6px);
+  --clip-tag: polygon(4px 0, 100% 0, 100% 100%, 0 100%, 0 4px);
+}
+
+/* ── Reset ── */
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  font-size: 16px;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  background: var(--bg-void);
+  color: var(--text-primary);
+  font-family: var(--font-body);
+  font-weight: 400;
+  overflow-x: hidden;
+  cursor: default;
+  /* Nebula atmosphere */
+  background-image:
+    radial-gradient(ellipse 70% 55% at 15% 25%, rgba(100, 80, 220, 0.08) 0%, transparent 70%),
+    radial-gradient(ellipse 55% 45% at 85% 78%, rgba(255, 100, 180, 0.06) 0%, transparent 65%),
+    radial-gradient(ellipse 40% 40% at 52% 8%,  rgba(128, 240, 224, 0.04) 0%, transparent 60%);
+}
+
+/* Holographic scanline overlay */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 9996;
+  background: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 3px,
+    rgba(180, 160, 255, 0.013) 3px,
+    rgba(180, 160, 255, 0.013) 4px
+  );
+}
+
+/* Grain — keeps dimensionality */
+body::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 9997;
+  opacity: 0.018;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  background-repeat: repeat;
+  background-size: 128px 128px;
+}
+
+/* Custom scrollbar — lavender trace */
+::-webkit-scrollbar { width: 4px; height: 4px; }
+::-webkit-scrollbar-track { background: var(--bg-base); }
+::-webkit-scrollbar-thumb {
+  background: var(--lavender-dim);
+  border-radius: 2px;
+}
+::-webkit-scrollbar-thumb:hover { background: rgba(196, 176, 255, 0.38); }
+
+/* ── Keyframe Animations ── */
+
+@keyframes holo-pulse {
+  0%   {
+    box-shadow:
+      0 0 6px  var(--lavender),
+      0 0 14px var(--lavender-glow),
+      inset 0 0 8px var(--lavender-dim);
+  }
+  33%  {
+    box-shadow:
+      0 0 8px  var(--sakura),
+      0 0 22px var(--sakura-glow),
+      inset 0 0 10px var(--sakura-dim);
+  }
+  66%  {
+    box-shadow:
+      0 0 8px  var(--aqua),
+      0 0 18px var(--aqua-glow),
+      inset 0 0 8px var(--aqua-dim);
+  }
+  100% {
+    box-shadow:
+      0 0 6px  var(--lavender),
+      0 0 14px var(--lavender-glow),
+      inset 0 0 8px var(--lavender-dim);
+  }
+}
+
+/* Legacy alias — ember-pulse is now holo-pulse */
+@keyframes ember-pulse {
+  0%   { box-shadow: 0 0 6px var(--lavender), 0 0 14px var(--lavender-glow), inset 0 0 8px var(--lavender-dim); }
+  33%  { box-shadow: 0 0 8px var(--sakura),   0 0 22px var(--sakura-glow),   inset 0 0 10px var(--sakura-dim); }
+  66%  { box-shadow: 0 0 8px var(--aqua),     0 0 18px var(--aqua-glow),     inset 0 0 8px var(--aqua-dim); }
+  100% { box-shadow: 0 0 6px var(--lavender), 0 0 14px var(--lavender-glow), inset 0 0 8px var(--lavender-dim); }
+}
+
+@keyframes glow-pulse {
+  0%, 100% {
+    box-shadow: 0 0 4px var(--lavender), 0 0 10px var(--lavender-glow),
+      inset 0 0 8px var(--lavender-dim);
+  }
+  50% {
+    box-shadow: 0 0 8px var(--lavender), 0 0 24px var(--lavender-glow),
+      0 0 44px rgba(196,176,255,0.12), inset 0 0 14px var(--lavender-dim);
+  }
+}
+
+@keyframes magenta-pulse {
+  0%, 100% { box-shadow: 0 0 4px var(--sakura), 0 0 12px var(--sakura-glow); }
+  50%       { box-shadow: 0 0 8px var(--sakura), 0 0 26px var(--sakura-glow), 0 0 50px rgba(255,173,212,0.14); }
+}
+
+/* Diagonal shine sweep — anime button hover */
+@keyframes anime-shine {
+  0%   { transform: translateX(-100%) skewX(-20deg); opacity: 0; }
+  10%  { opacity: 1; }
+  100% { transform: translateX(350%) skewX(-20deg); opacity: 0; }
+}
+
+/* Digital flicker — HUD element randomness */
+@keyframes data-flicker {
+  0%, 90%, 100% { opacity: 1; }
+  92%  { opacity: 0.65; }
+  94%  { opacity: 1; }
+  97%  { opacity: 0.35; }
+  98%  { opacity: 1; }
+}
+
+/* Keep candlelight-flicker name, now used as generic status pulse */
+@keyframes candlelight-flicker {
+  0%,100% { opacity: 1;    transform: scale(1);    }
+  25%     { opacity: 0.88; transform: scale(0.96); }
+  50%     { opacity: 1;    transform: scale(1.04); }
+  75%     { opacity: 0.92; transform: scale(0.98); }
+}
+
+@keyframes rune-glow {
+  0%, 100% { opacity: 0.5; text-shadow: 0 0 4px var(--lavender-glow); }
+  50%       { opacity: 1;   text-shadow: 0 0 12px var(--lavender-glow), 0 0 28px var(--lavender-glow); }
+}
+
+@keyframes float-y {
+  0%, 100% { transform: translateY(0px); }
+  50%       { transform: translateY(-7px); }
+}
+
+@keyframes float-particle {
+  0%   { transform: translate(0, 0) scale(1); opacity: 0; }
+  10%  { opacity: 1; }
+  90%  { opacity: 0.6; }
+  100% { transform: translate(var(--dx, 20px), var(--dy, -60px)) scale(0.4); opacity: 0; }
+}
+
+@keyframes slide-in-right {
+  from { transform: translateX(20px); opacity: 0; }
+  to   { transform: translateX(0);    opacity: 1; }
+}
+
+@keyframes slide-in-up {
+  from { transform: translateY(14px); opacity: 0; }
+  to   { transform: translateY(0);    opacity: 1; }
+}
+
+@keyframes fade-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+@keyframes xp-fill {
+  from { --xp-fill: 0%; }
+  to   { --xp-fill: var(--xp-target); }
+}
+
+@keyframes achievement-pop {
+  0%   { transform: translateX(120%); opacity: 0; }
+  15%  { transform: translateX(-6px);  opacity: 1; }
+  20%  { transform: translateX(0);     opacity: 1; }
+  80%  { transform: translateX(0);     opacity: 1; }
+  100% { transform: translateX(120%);  opacity: 0; }
+}
+
+@keyframes corner-draw {
+  from { width: 0; height: 0; opacity: 0; }
+  to   { width: 12px; height: 12px; opacity: 1; }
+}
+
+@keyframes scanline {
+  0%   { background-position: 0 0; }
+  100% { background-position: 0 100vh; }
+}
+
+@keyframes data-stream-down {
+  0%   { transform: translateY(-100%); opacity: 0; }
+  10%  { opacity: 0.5; }
+  90%  { opacity: 0.5; }
+  100% { transform: translateY(100vh); opacity: 0; }
+}
+
+/* ── Utility Classes ── */
+.font-display  { font-family: var(--font-display); }
+.font-ui       { font-family: var(--font-ui); }
+.font-mono     { font-family: var(--font-mono); }
+.text-cyan     { color: var(--lavender); }
+.text-magenta  { color: var(--sakura); }
+.text-gold     { color: var(--gold); }
+.text-muted    { color: var(--text-secondary); }
+.text-dim      { color: var(--text-dim); }
+
+/* ── Panel Component — Holographic Display ── */
+.panel {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-default);
+  clip-path: var(--clip-panel);
+  position: relative;
+  transition: border-color var(--transition-medium);
+}
+
+.panel:hover { border-color: var(--border-active); }
+
+/* Holographic corner brackets */
+.panel::before,
+.panel::after {
+  content: '';
+  position: absolute;
+  border-color: var(--lavender);
+  border-style: solid;
+  opacity: 0.42;
+  animation: corner-draw var(--transition-slow) ease-out both;
+}
+.panel::before {
+  top: -1px; left: -1px;
+  border-width: 2px 0 0 2px;
+  width: 12px; height: 12px;
+}
+.panel::after {
+  bottom: -1px; right: -1px;
+  border-width: 0 2px 2px 0;
+  width: 12px; height: 12px;
+}
+
+/* ── Button System ── */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-4);
+  font-family: var(--font-ui);
+  font-weight: 600;
+  font-size: 0.8rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  cursor: pointer;
+  border: none;
+  outline: none;
+  transition:
+    background var(--transition-fast),
+    box-shadow var(--transition-fast),
+    transform var(--transition-fast);
+  clip-path: var(--clip-btn);
+  white-space: nowrap;
+  overflow: hidden;
+  position: relative;
+}
+
+/* Anime-shine sweep on hover */
+.btn::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 55%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.14), transparent);
+  pointer-events: none;
+  transform: skewX(-20deg);
+}
+.btn:hover::before {
+  animation: anime-shine 0.55s ease-out forwards;
+}
+
+.btn-primary {
+  background: linear-gradient(135deg, rgba(196,176,255,0.2), rgba(196,176,255,0.06));
+  color: var(--lavender-bright);
+  border: 1px solid rgba(255, 173, 212, 0.45);
+  box-shadow: 0 0 14px var(--lavender-glow), inset 0 0 10px var(--lavender-dim);
+}
+.btn-primary:hover {
+  background: linear-gradient(135deg, rgba(255,173,212,0.2), rgba(196,176,255,0.1));
+  box-shadow: 0 0 24px var(--sakura-glow), 0 0 48px rgba(255,173,212,0.1), inset 0 0 16px var(--sakura-dim);
+  transform: translateY(-1px);
+  animation: holo-pulse 2.5s ease-in-out infinite;
+}
+
+.btn-magenta {
+  background: linear-gradient(135deg, rgba(255,173,212,0.18), rgba(255,173,212,0.06));
+  color: var(--sakura-bright);
+  border: 1px solid var(--border-magenta);
+  box-shadow: 0 0 12px var(--sakura-glow), inset 0 0 10px var(--sakura-dim);
+}
+.btn-magenta:hover {
+  background: linear-gradient(135deg, rgba(255,173,212,0.28), rgba(255,173,212,0.12));
+  box-shadow: 0 0 22px var(--sakura-glow), inset 0 0 16px var(--sakura-dim);
+  transform: translateY(-1px);
+  animation: magenta-pulse 2s ease-in-out infinite;
+}
+
+.btn-ghost {
+  background: transparent;
+  color: var(--text-secondary);
+  border: 1px solid var(--border-subtle);
+}
+.btn-ghost:hover {
+  color: var(--lavender);
+  border-color: var(--border-default);
+  background: var(--cyan-halo);
+}
+
+/* ── Tag / Badge ── */
+.tag {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 10px;
+  font-family: var(--font-ui);
+  font-size: 0.6rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  clip-path: var(--clip-tag);
+}
+
+.tag-cyan    { background: var(--lavender-dim); color: var(--lavender-bright); border: 1px solid rgba(196,176,255,0.35); }
+.tag-magenta { background: var(--sakura-dim);   color: var(--sakura-bright);   border: 1px solid var(--border-magenta); }
+.tag-gold    { background: rgba(253,230,138,.1); color: var(--gold);            border: 1px solid rgba(253,230,138,.35); }
+
+/* ── XP Bar ── */
+.xp-bar-wrap  { display: flex; align-items: center; gap: var(--space-2); }
+.xp-bar-track {
+  flex: 1;
+  height: 4px;
+  background: var(--bg-elevated);
+  border-radius: 1px;
+  overflow: hidden;
+  position: relative;
+}
+.xp-bar-fill {
+  height: 100%;
+  width: var(--xp-fill);
+  background: linear-gradient(90deg, var(--lavender), var(--sakura), var(--aqua));
+  border-radius: 1px;
+  box-shadow: 0 0 8px var(--lavender-glow);
+  animation: xp-fill 1.2s cubic-bezier(0.4, 0, 0.2, 1) both;
+  transition: --xp-fill 1.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* ── Achievement Toast ── */
+.achievement-toast {
+  position: fixed;
+  top: var(--space-6);
+  right: var(--space-6);
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  background: var(--bg-modal);
+  border: 1px solid rgba(253, 230, 138, 0.42);
+  box-shadow:
+    0 0 24px var(--gold-glow),
+    0 8px 40px rgba(0, 0, 0, 0.75);
+  backdrop-filter: blur(16px);
+  clip-path: var(--clip-panel);
+  animation: achievement-pop 4s cubic-bezier(0.4, 0, 0.2, 1) both;
+  min-width: 280px;
+}
+
+.achievement-icon {
+  font-size: 1.8rem;
+  animation: float-y 3s ease-in-out infinite;
+}
+
+/* ── Input ── */
+.input {
+  width: 100%;
+  padding: var(--space-3) var(--space-4);
+  background: var(--bg-base);
+  border: 1px solid var(--border-default);
+  color: var(--text-primary);
+  font-family: var(--font-body);
+  font-size: 0.95rem;
+  outline: none;
+  clip-path: var(--clip-btn);
+  transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+}
+.input:focus {
+  border-color: rgba(255, 173, 212, 0.55);
+  box-shadow: 0 0 0 1px var(--lavender-dim), 0 0 14px var(--lavender-glow);
+}
+.input::placeholder { color: var(--text-dim); }
+
+/* ── Tool button (sidebar) — holographic rune tile ── */
+.tool-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  width: 48px;
+  height: 48px;
+  background: transparent;
+  border: 1px solid transparent;
+  color: var(--text-dim);
+  cursor: pointer;
+  border-radius: 2px;
+  font-family: var(--font-ui);
+  font-size: 0.5rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  transition: all var(--transition-fast);
+  position: relative;
+}
+
+.tool-btn svg { width: 18px; height: 18px; }
+
+.tool-btn:hover {
+  color: var(--lavender-bright);
+  border-color: rgba(196, 176, 255, 0.35);
+  background: var(--lavender-dim);
+  box-shadow:
+    0 0 10px var(--lavender-glow),
+    inset 0 0 8px var(--lavender-dim);
+}
+
+.tool-btn.active {
+  color: var(--lavender-bright);
+  border-color: rgba(255, 173, 212, 0.45);
+  background: var(--lavender-dim);
+  box-shadow:
+    0 0 14px var(--lavender-glow),
+    inset 0 0 12px var(--lavender-dim);
+  animation: holo-pulse 3s ease-in-out infinite;
+}
+
+/* Tooltip — holographic plaque */
+.tool-btn::after {
+  content: attr(data-tip);
+  position: absolute;
+  left: calc(100% + 14px);
+  top: 50%;
+  transform: translateY(-50%) scale(0.88);
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-default);
+  color: var(--text-primary);
+  font-family: var(--font-ui);
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  padding: 4px 10px;
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
+  clip-path: var(--clip-tag);
+  transition: all var(--transition-fast);
+}
+.tool-btn:hover::after {
+  opacity: 1;
+  transform: translateY(-50%) scale(1);
+}
+
+/* ── Divider — data trace ── */
+.divider {
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--border-default), transparent);
+  margin: var(--space-2) 0;
+}
+
+.divider-v {
+  width: 1px;
+  align-self: stretch;
+  background: linear-gradient(180deg, transparent, var(--border-default), transparent);
+  margin: 0 var(--space-2);
+}
+
+/* ── Signal divider — center star ornament ── */
+.rune-divider {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: var(--space-3) 0;
+  color: var(--text-dim);
+  font-family: var(--font-ui);
+  font-size: 0.55rem;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+}
+.rune-divider::before,
+.rune-divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+}
+.rune-divider::before { background: linear-gradient(90deg, transparent, var(--border-default)); }
+.rune-divider::after  { background: linear-gradient(90deg, var(--border-default), transparent); }
+
+/* ── Scrollable panel ── */
+.scroll-panel {
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: var(--lavender-dim) transparent;
+}
+
+/* ── Status chip — neural link indicator ── */
+.status-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--font-ui);
+  font-size: 0.62rem;
+  color: var(--text-secondary);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.status-chip .dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--lavender);
+  box-shadow: 0 0 6px var(--lavender-glow);
+  animation: holo-pulse 3s ease-in-out infinite;
+}
+
+/* ── Focus ring ── */
+:focus-visible {
+  outline: 1px solid var(--lavender);
+  outline-offset: 2px;
+}
+
+/* ── Ornate panel variant (4-corner star brackets) ── */
+.ornate {
+  position: relative;
+}
+.ornate::before {
+  content: '✦';
+  position: absolute;
+  top: -6px; left: -6px;
+  font-size: 8px;
+  color: var(--lavender);
+  opacity: 0.5;
+  line-height: 1;
+}

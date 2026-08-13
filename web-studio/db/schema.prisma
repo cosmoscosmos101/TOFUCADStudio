@@ -1,0 +1,373 @@
+// ═══════════════════════════════════════════════
+// TOFU CAD Studio — Full Database Schema v2
+// PostgreSQL + Prisma
+// Covers: Auth, Projects, Parametric Version Control,
+//         Fork Lineage, Collaboration, Gamification
+// ═══════════════════════════════════════════════
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ══════════════════════════════════════════════
+// AUTH & USERS
+// ══════════════════════════════════════════════
+
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  username     String   @unique
+  displayName  String
+  avatarUrl    String?
+  bio          String?  @db.Text
+  passwordHash String
+
+  googleId     String?  @unique
+
+  // Gamification
+  xpPoints     Int      @default(500)
+  level        Int      @default(1)
+  streak       Int      @default(0)
+  lastActiveAt DateTime @default(now())
+
+  // Relations
+  projects          Project[]
+  forksInitiated    Fork[]            @relation("ForkerRelation")
+  achievements      UserAchievement[]
+  sessions          Session[]
+  notifications     Notification[]
+  commits           Commit[]
+  collaborations    Collaboration[]
+  aiUsageLog        AIUsageLog[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([email])
+  @@map("users")
+}
+
+model Session {
+  id        String   @id @default(cuid())
+  userId    String
+  token     String   @unique @default(cuid())
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([token])
+  @@map("sessions")
+}
+
+// ══════════════════════════════════════════════
+// PROJECTS & FORKING
+// ══════════════════════════════════════════════
+
+enum CadType {
+  SKETCH_2D
+  MODEL_3D
+  ASSEMBLY
+  MIXED
+}
+
+model Project {
+  id          String   @id @default(cuid())
+  title       String
+  description String?  @db.Text
+  thumbnailUrl String?
+  isPublic    Boolean  @default(false)
+  isTemplate  Boolean  @default(false)
+  cadType     CadType  @default(MIXED)
+  tags        String[]
+
+  // Native file storage (S3/R2 key)
+  fileKey      String?
+  fileSize     Int?
+
+  // Quick-preview JSON snapshot (latest commit's scene)
+  sceneSnapshot Json?
+
+  // Fork lineage
+  forkedFromId String?
+  forkedFrom   Project?  @relation("ForkTree", fields: [forkedFromId], references: [id])
+  forks        Project[] @relation("ForkTree")
+  forkRecords  Fork[]    @relation("OriginalProject")
+
+  // Git-for-CAD
+  branches     Branch[]
+
+  // Owner
+  ownerId String
+  owner   User    @relation(fields: [ownerId], references: [id])
+
+  // Community stats (denormalized)
+  viewCount    Int @default(0)
+  forkCount    Int @default(0)
+  likeCount    Int @default(0)
+  commentCount Int @default(0)
+
+  comments     Comment[]
+  likes        Like[]
+  collaborations Collaboration[]
+  aiUsageLogs  AIUsageLog[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([ownerId])
+  @@index([isPublic, createdAt])
+  @@index([tags])
+  @@map("projects")
+}
+
+model Fork {
+  id                String   @id @default(cuid())
+  originalProjectId String
+  forkedProjectId   String   @unique
+  forkerId          String
+
+  originalProject   Project  @relation("OriginalProject", fields: [originalProjectId], references: [id])
+  forker            User     @relation("ForkerRelation", fields: [forkerId], references: [id])
+
+  forkedAt DateTime @default(now())
+
+  @@index([originalProjectId])
+  @@index([forkerId])
+  @@map("forks")
+}
+
+// ══════════════════════════════════════════════
+// GIT-FOR-CAD: BRANCHES & COMMITS
+// ══════════════════════════════════════════════
+
+model Branch {
+  id          String  @id @default(cuid())
+  projectId   String
+  name        String  // "main", "feat/suspension-v2"
+  color       String  @default("#00e5ff")
+  isDefault   Boolean @default(false)
+
+  // Branch forked from another branch (within same project)
+  baseBranchId String?
+  baseBranch   Branch?  @relation("BranchTree", fields: [baseBranchId], references: [id])
+  childBranches Branch[] @relation("BranchTree")
+
+  project  Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  commits  Commit[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([projectId, name])
+  @@index([projectId])
+  @@map("branches")
+}
+
+model Commit {
+  id       String  @id @default(cuid())
+  branchId String
+  message  String
+  authorId String
+
+  // Full scene object graph snapshot (JSON array of CAD objects)
+  sceneSnapshot Json
+
+  // Ordered list of parametric operations that produced this scene.
+  // Replaying these rebuilds the model from scratch — true parametric history.
+  parametricOps ParametricOp[]
+
+  // Pointer to parent commit (null for initial commit)
+  parentId String?
+  parent   Commit?  @relation("CommitHistory", fields: [parentId], references: [id])
+  children Commit[] @relation("CommitHistory")
+
+  branch Branch @relation(fields: [branchId], references: [id], onDelete: Cascade)
+  author User   @relation(fields: [authorId], references: [id])
+
+  createdAt DateTime @default(now())
+
+  @@index([branchId])
+  @@index([authorId])
+  @@map("commits")
+}
+
+// Each row represents one parametric operation applied to the model.
+// Ops are ordered and replay produces the same geometry deterministically.
+model ParametricOp {
+  id       String @id @default(cuid())
+  commitId String
+  order    Int    // execution order within this commit
+
+  // Operation type: "extrude" | "revolve" | "fillet" | "boolean" | "sketch" | etc.
+  opType   String
+
+  // Operation-specific parameters (bore, height, angle, tolerance, etc.)
+  params   Json
+
+  // The object(s) this op was applied to
+  targetIds String[]
+
+  commit Commit @relation(fields: [commitId], references: [id], onDelete: Cascade)
+
+  @@index([commitId, order])
+  @@map("parametric_ops")
+}
+
+// ══════════════════════════════════════════════
+// REAL-TIME COLLABORATION
+// ══════════════════════════════════════════════
+
+model Collaboration {
+  id        String   @id @default(cuid())
+  projectId String
+  userId    String
+  role      CollabRole @default(VIEWER)
+
+  // Last known cursor position in 3D space
+  cursorPos Json?    // {x, y, z}
+  activeTool String?
+  activeBranchId String?
+
+  lastSeenAt DateTime @default(now())
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  user    User    @relation(fields: [userId], references: [id])
+
+  @@unique([projectId, userId])
+  @@index([projectId])
+  @@map("collaborations")
+}
+
+enum CollabRole {
+  OWNER
+  EDITOR
+  VIEWER
+}
+
+// ══════════════════════════════════════════════
+// AI USAGE TRACKING
+// ══════════════════════════════════════════════
+
+model AIUsageLog {
+  id        String   @id @default(cuid())
+  userId    String
+  projectId String?
+  prompt    String   @db.Text
+  parsedIntent String?   // e.g. "gear", "extrude", "boolean"
+  success   Boolean
+
+  // The parametric op(s) the AI generated, if successful
+  generatedOps Json?
+
+  tokensUsed Int?     // for billing/quota tracking
+  latencyMs  Int?
+
+  user    User     @relation(fields: [userId], references: [id])
+  project Project? @relation(fields: [projectId], references: [id])
+
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@index([projectId])
+  @@map("ai_usage_logs")
+}
+
+// ══════════════════════════════════════════════
+// COMMUNITY: COMMENTS & LIKES
+// ══════════════════════════════════════════════
+
+model Comment {
+  id        String   @id @default(cuid())
+  body      String   @db.Text
+  projectId String
+  authorId  String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@index([projectId])
+  @@map("comments")
+}
+
+model Like {
+  userId    String
+  projectId String
+  createdAt DateTime @default(now())
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@id([userId, projectId])
+  @@map("likes")
+}
+
+// ══════════════════════════════════════════════
+// GAMIFICATION
+// ══════════════════════════════════════════════
+
+model Achievement {
+  id          String            @id @default(cuid())
+  key         String            @unique
+  title       String
+  description String
+  iconEmoji   String            @default("🏆")
+  xpReward    Int               @default(100)
+  rarity      AchievementRarity @default(COMMON)
+  users       UserAchievement[]
+
+  @@map("achievements")
+}
+
+enum AchievementRarity {
+  COMMON
+  RARE
+  EPIC
+  LEGENDARY
+}
+
+model UserAchievement {
+  userId        String
+  achievementId String
+  unlockedAt    DateTime @default(now())
+
+  user        User        @relation(fields: [userId], references: [id])
+  achievement Achievement @relation(fields: [achievementId], references: [id])
+
+  @@id([userId, achievementId])
+  @@map("user_achievements")
+}
+
+// ══════════════════════════════════════════════
+// NOTIFICATIONS
+// ══════════════════════════════════════════════
+
+enum NotificationType {
+  FORK
+  LIKE
+  COMMENT
+  ACHIEVEMENT
+  LEVEL_UP
+  COLLAB_INVITE
+  AI_GENERATION
+  COMMIT
+}
+
+model Notification {
+  id        String           @id @default(cuid())
+  userId    String
+  type      NotificationType
+  payload   Json
+  read      Boolean          @default(false)
+  createdAt DateTime         @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, read])
+  @@map("notifications")
+}

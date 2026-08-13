@@ -6,7 +6,9 @@ import * as THREE from 'three'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useNavigate } from 'react-router-dom'
 import AuthModal from '../components/AuthModal'
+import ProfileDrawer from '../components/ProfileDrawer'
 import DotScatter from '../components/DotScatter'
+import { useAuthStore } from '../hooks/useAuthStore'
 import '../styles/globals.css'
 
 /* ══════════════════════════════════════════════
@@ -315,9 +317,11 @@ function SignalDivider({ label }) {
 }
 
 export default function Homepage() {
-  const [showAuth, setShowAuth] = useState(false)
-  const [authMode, setAuthMode] = useState('login')
+  const [showAuth, setShowAuth]       = useState(false)
+  const [authMode, setAuthMode]       = useState('login')
+  const [showProfile, setShowProfile] = useState(false)
   const navigate = useNavigate()
+  const { user } = useAuthStore()
 
   const openLogin    = () => { setAuthMode('login');    setShowAuth(true) }
   const openRegister = () => { setAuthMode('register'); setShowAuth(true) }
@@ -385,36 +389,67 @@ export default function Homepage() {
         </div>
 
         {/* Auth */}
-        <div style={{ display:'flex', gap:8 }}>
-          <button
-            onClick={openLogin}
-            style={{
-              background: 'transparent',
-              border: '1px solid rgba(196,176,255,0.28)',
-              color: '#8878c0', fontFamily: 'var(--font-ui)',
-              fontSize: '0.68rem', letterSpacing: '0.1em',
-              textTransform: 'uppercase', cursor: 'pointer',
-              padding: '6px 16px', borderRadius: 1,
-              transition: 'all 150ms',
-            }}
-            onMouseEnter={e => { e.currentTarget.style.color='#c4b0ff'; e.currentTarget.style.borderColor='rgba(196,176,255,0.5)' }}
-            onMouseLeave={e => { e.currentTarget.style.color='#8878c0'; e.currentTarget.style.borderColor='rgba(196,176,255,0.28)' }}
-          >Sign In</button>
-          <button
-            onClick={openRegister}
-            style={{
-              background: 'linear-gradient(135deg, rgba(196,176,255,0.18), rgba(255,173,212,0.1))',
-              border: '1px solid rgba(255,173,212,0.48)',
-              color: '#ddd0ff', fontFamily: 'var(--font-ui)',
-              fontSize: '0.68rem', letterSpacing: '0.1em',
-              textTransform: 'uppercase', cursor: 'pointer',
-              padding: '6px 16px', borderRadius: 1,
-              boxShadow: '0 0 14px rgba(196,176,255,0.2)',
-              transition: 'all 150ms',
-            }}
-            onMouseEnter={e => { e.currentTarget.style.boxShadow='0 0 24px rgba(255,173,212,0.35)'; e.currentTarget.style.borderColor='rgba(255,173,212,0.68)' }}
-            onMouseLeave={e => { e.currentTarget.style.boxShadow='0 0 14px rgba(196,176,255,0.2)'; e.currentTarget.style.borderColor='rgba(255,173,212,0.48)' }}
-          >Join the Network</button>
+        <div style={{ display:'flex', gap:8, alignItems:'center' }}>
+          {user ? (
+            <button
+              onClick={() => setShowProfile(true)}
+              style={{
+                display: 'flex', alignItems: 'center', gap: 8,
+                background: 'rgba(196,176,255,0.08)',
+                border: '1px solid rgba(196,176,255,0.28)',
+                color: '#c4b0ff', fontFamily: 'var(--font-ui)',
+                fontSize: '0.68rem', letterSpacing: '0.1em',
+                textTransform: 'uppercase', cursor: 'pointer',
+                padding: '5px 14px 5px 8px', borderRadius: 1,
+                transition: 'all 150ms',
+              }}
+              onMouseEnter={e => { e.currentTarget.style.borderColor='rgba(196,176,255,0.55)'; e.currentTarget.style.background='rgba(196,176,255,0.14)' }}
+              onMouseLeave={e => { e.currentTarget.style.borderColor='rgba(196,176,255,0.28)'; e.currentTarget.style.background='rgba(196,176,255,0.08)' }}
+            >
+              <div style={{
+                width: 22, height: 22, borderRadius: '50%',
+                background: 'linear-gradient(135deg, #c4b0ff40, #ffadd440)',
+                border: '1px solid rgba(196,176,255,0.5)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                fontFamily: 'var(--font-display)', fontSize: '0.6rem', color: '#c4b0ff',
+              }}>
+                {(user.displayName || user.username || '?').slice(0, 2).toUpperCase()}
+              </div>
+              {user.username}
+            </button>
+          ) : (
+            <>
+              <button
+                onClick={openLogin}
+                style={{
+                  background: 'transparent',
+                  border: '1px solid rgba(196,176,255,0.28)',
+                  color: '#8878c0', fontFamily: 'var(--font-ui)',
+                  fontSize: '0.68rem', letterSpacing: '0.1em',
+                  textTransform: 'uppercase', cursor: 'pointer',
+                  padding: '6px 16px', borderRadius: 1,
+                  transition: 'all 150ms',
+                }}
+                onMouseEnter={e => { e.currentTarget.style.color='#c4b0ff'; e.currentTarget.style.borderColor='rgba(196,176,255,0.5)' }}
+                onMouseLeave={e => { e.currentTarget.style.color='#8878c0'; e.currentTarget.style.borderColor='rgba(196,176,255,0.28)' }}
+              >Sign In</button>
+              <button
+                onClick={openRegister}
+                style={{
+                  background: 'linear-gradient(135deg, rgba(196,176,255,0.18), rgba(255,173,212,0.1))',
+                  border: '1px solid rgba(255,173,212,0.48)',
+                  color: '#ddd0ff', fontFamily: 'var(--font-ui)',
+                  fontSize: '0.68rem', letterSpacing: '0.1em',
+                  textTransform: 'uppercase', cursor: 'pointer',
+                  padding: '6px 16px', borderRadius: 1,
+                  boxShadow: '0 0 14px rgba(196,176,255,0.2)',
+                  transition: 'all 150ms',
+                }}
+                onMouseEnter={e => { e.currentTarget.style.boxShadow='0 0 24px rgba(255,173,212,0.35)'; e.currentTarget.style.borderColor='rgba(255,173,212,0.68)' }}
+                onMouseLeave={e => { e.currentTarget.style.boxShadow='0 0 14px rgba(196,176,255,0.2)'; e.currentTarget.style.borderColor='rgba(255,173,212,0.48)' }}
+              >Join the Network</button>
+            </>
+          )}
         </div>
       </motion.nav>
 
@@ -703,6 +738,9 @@ export default function Homepage() {
       <AnimatePresence>
         {showAuth && <AuthModal onClose={() => setShowAuth(false)} initialMode={authMode} />}
       </AnimatePresence>
+
+      {/* Profile Drawer */}
+      <ProfileDrawer open={showProfile} onClose={() => setShowProfile(false)} />
     </motion.div>
   )
 }

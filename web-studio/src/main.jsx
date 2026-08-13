@@ -3,6 +3,7 @@ import ReactDOM from 'react-dom/client'
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom'
 import { AnimatePresence } from 'framer-motion'
 import Homepage from './pages/Homepage'
+import Projects from './pages/Projects'
 import Studio from './pages/Studio'
 import { useAuthStore } from './hooks/useAuthStore'
 import './styles/globals.css'
@@ -26,6 +27,9 @@ function AnimatedRoutes() {
     <AnimatePresence mode="wait">
       <Routes location={location} key={location.pathname}>
         <Route path="/" element={<Homepage />} />
+        <Route path="/projects" element={
+          <ProtectedRoute><Projects /></ProtectedRoute>
+        } />
         <Route path="/studio" element={
           <ProtectedRoute><Studio /></ProtectedRoute>
         } />

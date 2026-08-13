@@ -326,6 +326,7 @@ export default function Homepage() {
   const openLogin    = () => { setAuthMode('login');    setShowAuth(true) }
   const openRegister = () => { setAuthMode('register'); setShowAuth(true) }
   const goToStudio   = () => navigate('/studio')
+  const goToProjects = () => user ? navigate('/projects') : openRegister()
 
   return (
     <motion.div
@@ -566,7 +567,7 @@ export default function Homepage() {
             style={{ display:'flex', gap:12, flexWrap:'wrap' }}
           >
             <button
-              onClick={openRegister}
+              onClick={goToProjects}
               style={{
                 position: 'relative',
                 overflow: 'hidden',
@@ -699,7 +700,7 @@ export default function Homepage() {
           <SignalDivider label="Initialize Session" />
           <div style={{ marginTop:34, display:'flex', justifyContent:'center', gap:14, flexWrap:'wrap' }}>
             <button
-              onClick={openRegister}
+              onClick={goToProjects}
               style={{
                 position: 'relative',
                 overflow: 'hidden',

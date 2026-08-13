@@ -6,6 +6,7 @@ import * as THREE from 'three'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useNavigate } from 'react-router-dom'
 import AuthModal from '../components/AuthModal'
+import DotScatter from '../components/DotScatter'
 import '../styles/globals.css'
 
 /* ══════════════════════════════════════════════
@@ -602,6 +603,7 @@ export default function Homepage() {
         padding: '100px 5% 120px',
         background: 'linear-gradient(180deg, var(--bg-void) 0%, #0a0820 100%)',
       }}>
+        <DotScatter count={110} speed={0.3} opacity={0.45} repelRadius={120} />
         {/* Top fade */}
         <div style={{ position:'absolute', top:0, left:0, right:0, height:80, background:'linear-gradient(0deg, transparent, var(--bg-void))', pointerEvents:'none' }} />
 

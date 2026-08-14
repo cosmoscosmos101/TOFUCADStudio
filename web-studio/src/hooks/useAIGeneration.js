@@ -279,7 +279,7 @@ const ASSEMBLIES = {
 const KEYWORD_MAP = [
   [/doraemon|doremon|dora/i,           'doraemon'  ],
   [/robot|android|humanoid|cyborg/i,   'robot'     ],
-  [/mech|exosuit|exo.?suit|titan/i,    'mech'      ],
+  [/\bmech\b|exosuit|exo.?suit|titan/i, 'mech'      ],
   [/helmet|visor|head.?gear/i,         'helmet'    ],
   [/gear|cog|sprocket|pinion/i,        'gear'      ],
   [/bracket|mount|clamp|flange/i,      'bracket'   ],

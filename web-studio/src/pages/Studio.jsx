@@ -1,4 +1,5 @@
 import { useRef, useState, Suspense, useEffect, useCallback } from 'react'
+import { useParams } from 'react-router-dom'
 import { Canvas, useFrame, useThree } from '@react-three/fiber'
 import {
   Grid, OrbitControls, GizmoHelper, GizmoViewport, Stats, TransformControls, Html, Line,
@@ -13,6 +14,7 @@ import { useCADHistory, useUndoRedo } from '../hooks/useCADHistory'
 import { deleteObjectCmd, addObjectCmd, changePropertyCmd } from '../hooks/useCADCommands'
 import { ToolProvider, useTool }      from '../context/ToolContext'
 import { useAuthStore }               from '../hooks/useAuthStore'
+import { useGitStore }                from '../hooks/useGitStore'
 import HistoryPanel                   from '../components/HistoryPanel'
 import LiveTweaksPanel                from '../components/LiveTweaksPanel'
 import GitPanel                       from '../components/GitPanel'
@@ -519,6 +521,8 @@ function Ribbon({ onTechDrawing, onProfile, selectedId }) {
   const objectCount = objects.length
   const xpPct = Math.round((xp / xpMax) * 100)
   const selectedObj = selectedId ? objects.find(o => o.id === selectedId) : null
+  const projectTitle    = useGitStore(s => s.projectTitle)
+  const loadingProject  = useGitStore(s => s.loadingProject)
 
   const [activeTab, setActiveTab] = useState('Home')
   const [openMenu,  setOpenMenu]  = useState(null)
@@ -815,6 +819,17 @@ function Ribbon({ onTechDrawing, onProfile, selectedId }) {
             >{icon}</button>
           ))}
         </div>
+
+        {/* Project breadcrumb — only shown when a project is loaded */}
+        {(projectTitle || loadingProject) && (
+          <div style={{ display:'flex', alignItems:'center', gap:5, padding:'0 10px', borderRight:'1px solid rgba(196,176,255,0.08)', marginRight:8, flexShrink:0 }}>
+            <span style={{ fontFamily:'var(--font-mono)', fontSize:'0.52rem', color:'var(--text-dim)', letterSpacing:'0.06em' }}>⌂</span>
+            <span style={{ fontFamily:'var(--font-mono)', fontSize:'0.52rem', color:'var(--text-dim)', letterSpacing:'0.04em' }}>/</span>
+            <span style={{ fontFamily:'var(--font-mono)', fontSize:'0.58rem', color: loadingProject ? 'var(--text-dim)' : 'var(--lavender-bright)', letterSpacing:'0.04em', maxWidth:160, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>
+              {loadingProject ? '…' : projectTitle}
+            </span>
+          </div>
+        )}
 
         {/* Tab bar */}
         <div style={{ display:'flex', flex:1, height:'100%' }}>
@@ -1723,6 +1738,7 @@ function PanelNub({ side, icon, label, onClick }) {
 
 /* ── Main Studio ── */
 function StudioInner() {
+  const { projectId } = useParams()
   const [selectedId,      setSelectedId]      = useState(null)
   const [showDrawing,     setShowDrawing]      = useState(false)
   const [showAchievement, setShowAchievement] = useState(true)
@@ -1746,6 +1762,13 @@ function StudioInner() {
   const setCameraPreset = useCADStore(s => s.setCameraPreset)
 
   const aiStatus = useAIGeneration(s => s.status)
+
+  const loadFromServer   = useGitStore(s => s.loadFromServer)
+  const loadingProject   = useGitStore(s => s.loadingProject)
+
+  useEffect(() => {
+    if (projectId) loadFromServer(projectId)
+  }, [projectId])
 
   useKeyboardShortcuts()
 

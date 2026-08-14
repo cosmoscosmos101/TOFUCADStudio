@@ -325,7 +325,7 @@ export default function Homepage() {
 
   const openLogin    = () => { setAuthMode('login');    setShowAuth(true) }
   const openRegister = () => { setAuthMode('register'); setShowAuth(true) }
-  const goToStudio   = () => navigate('/studio')
+  const goToStudio   = () => user ? navigate('/studio') : openLogin()
   const goToProjects = () => user ? navigate('/projects') : openRegister()
 
   return (

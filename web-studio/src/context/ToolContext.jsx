@@ -4,7 +4,7 @@ import { createContext, useContext, useState, useCallback } from 'react'
 // Modes correspond to what the left toolbar buttons activate.
 // TransformMode is a sub-mode only active when mode === 'SELECT'.
 
-const VALID_MODES = ['SELECT', 'SKETCH_2D', 'EXTRUDE', 'REVOLVE', 'FILLET', 'MEASURE', 'POLYLINE', 'CIRCLE', 'ARC', 'RECT', 'SPLINE', 'POLYGON', 'SWEEP']
+const VALID_MODES = ['SELECT', 'SKETCH_2D', 'EXTRUDE', 'REVOLVE', 'FILLET', 'MEASURE', 'LINE', 'POLYLINE', 'CIRCLE', 'ARC', 'RECT', 'SPLINE', 'POLYGON', 'SWEEP', 'BOOLEAN', 'LOFT', 'CHAMFER', 'SHELL', 'MEASURE', 'TEXT', 'LEADER']
 const TRANSFORM_MODES = ['translate', 'rotate', 'scale']
 
 const ToolContext = createContext(null)

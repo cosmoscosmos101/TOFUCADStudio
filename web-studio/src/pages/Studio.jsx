@@ -15,6 +15,7 @@ import { deleteObjectCmd, addObjectCmd, changePropertyCmd } from '../hooks/useCA
 import { ToolProvider, useTool }      from '../context/ToolContext'
 import { useAuthStore }               from '../hooks/useAuthStore'
 import { useGitStore }                from '../hooks/useGitStore'
+import Canvas2D                        from '../components/Canvas2D'
 import HistoryPanel                   from '../components/HistoryPanel'
 import LiveTweaksPanel                from '../components/LiveTweaksPanel'
 import GitPanel                       from '../components/GitPanel'
@@ -40,11 +41,14 @@ function useKeyboardShortcuts() {
       if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return
       const k = e.key.toLowerCase()
       if (k === 'escape') setMode('SELECT')
+      if (k === 'l') setMode('LINE')
+      if (k === 'p') setMode('POLYLINE')
       if (k === 'e') setMode('EXTRUDE')
       if (k === 'f') setMode('FILLET')
       if (k === 'm') setMode('MEASURE')
       if (k === 'r') setMode('RECT')
       if (k === 'c') setMode('CIRCLE')
+      if (k === 'a') setMode('ARC')
       if (k === 'v') setMode('REVOLVE')
       if (k === 'w' && !mod) setMode('SWEEP')
       if (k === 'g') cycleTransform()
@@ -581,12 +585,12 @@ function Ribbon({ onTechDrawing, onProfile, selectedId }) {
           </RibbonGroup>
           <RibbonGroup title="Draw 2D">
             <div style={{ display:'flex', flexDirection:'column', gap:2 }}>
-              {[['⌒','PLINE','POLYLINE'],['○','CIRCLE','CIRCLE'],['◠','ARC','ARC']].map(([icon, label, m]) => (
+              {[['⌒','LINE','LINE'],['⌒⌒','PLINE','POLYLINE'],['◠','ARC','ARC']].map(([icon, label, m]) => (
                 <RibbonBtn key={m} icon={icon} label={label} active={mode===m} onClick={() => setToolMode(m)} />
               ))}
             </div>
             <div style={{ display:'flex', flexDirection:'column', gap:2 }}>
-              {[['□','RECT','RECT'],['〜','SPLINE','SPLINE'],['⬡','POLY','POLYGON']].map(([icon, label, m]) => (
+              {[['○','CIRCLE','CIRCLE'],['□','RECT','RECT'],['〜','SPLINE','SPLINE']].map(([icon, label, m]) => (
                 <RibbonBtn key={m} icon={icon} label={label} active={mode===m} onClick={() => setToolMode(m)} />
               ))}
             </div>
@@ -932,7 +936,7 @@ function CommandLine() {
     const pos = [spread * 2, 0.6, -(Math.floor(objectCount / 6)) * 2]
     const shapes = { BOX:'box', SPHERE:'sphere', CYL:'cylinder', CYLINDER:'cylinder', CONE:'cone', TORUS:'torus', TOR:'torus' }
     const colors  = { box:'#00e5ff', sphere:'#e040fb', cylinder:'#ffd740', cone:'#69ff47', torus:'#ff6688' }
-    const tools   = { LINE:'POLYLINE', PL:'POLYLINE', CIRCLE:'CIRCLE', C:'CIRCLE', ARC:'ARC', A:'ARC', RECT:'RECT', REC:'RECT', SPLINE:'SPLINE', EXT:'EXTRUDE', EXTRUDE:'EXTRUDE', FILLET:'FILLET', F:'FILLET', CHAMFER:'CHAMFER', SHELL:'SHELL', MEASURE:'MEASURE', M:'MEASURE', BOOLEAN:'BOOLEAN' }
+    const tools   = { LINE:'LINE', L:'LINE', PL:'POLYLINE', PLINE:'POLYLINE', CIRCLE:'CIRCLE', C:'CIRCLE', ARC:'ARC', A:'ARC', RECT:'RECT', REC:'RECT', SPLINE:'SPLINE', EXT:'EXTRUDE', EXTRUDE:'EXTRUDE', FILLET:'FILLET', CHAMFER:'CHAMFER', SHELL:'SHELL', MEASURE:'MEASURE', M:'MEASURE', BOOLEAN:'BOOLEAN' }
     if (shapes[verb]) { execute(addObjectCmd({ type: shapes[verb], color: colors[shapes[verb]], position: pos })); push(`${shapes[verb]} added.`) }
     else if (tools[verb]) { setToolMode(tools[verb]); push(`${tools[verb]} tool active.`) }
     else if (verb === 'UNDO' || verb === 'U') { undo(); push('Undo.') }
@@ -1739,6 +1743,149 @@ function PanelNub({ side, icon, label, onClick }) {
   )
 }
 
+/* ── 2D Properties Panel ── */
+function Properties2D({ entities, selectedId, setEntities, setSelectedId }) {
+  const e = entities.find(x => x.id === selectedId)
+  const { mode } = useTool()
+
+  const setColor = (color) => {
+    if (!selectedId) return
+    setEntities(prev => prev.map(x => x.id === selectedId ? { ...x, color } : x))
+  }
+
+  const deleteSelected = () => {
+    setEntities(prev => prev.filter(x => x.id !== selectedId))
+    setSelectedId(null)
+  }
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden' }}>
+      {/* Entity info */}
+      <div style={{ padding: '8px 10px', borderBottom: '1px solid var(--border-subtle)', flexShrink: 0 }}>
+        <div style={{ fontFamily: 'var(--font-mono)', fontSize: '0.52rem', color: 'var(--text-dim)', letterSpacing: '0.14em', textTransform: 'uppercase', marginBottom: 4 }}>Properties</div>
+        {e ? (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.7rem', color: 'var(--lavender-bright)', textTransform: 'uppercase' }}>{e.type}</span>
+              <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.55rem', color: 'var(--text-dim)' }}>{e.id.slice(0,8)}</span>
+            </div>
+            {/* geometry info */}
+            {e.type === 'line' && (
+              <>
+                <Row label="P1" val={`${e.p1[0].toFixed(2)}, ${e.p1[1].toFixed(2)}`} />
+                <Row label="P2" val={`${e.p2[0].toFixed(2)}, ${e.p2[1].toFixed(2)}`} />
+                <Row label="Len" val={Math.hypot(e.p2[0]-e.p1[0], e.p2[1]-e.p1[1]).toFixed(3)} />
+                <Row label="Ang" val={`${(Math.atan2(e.p2[1]-e.p1[1], e.p2[0]-e.p1[0])*180/Math.PI).toFixed(1)}°`} />
+              </>
+            )}
+            {e.type === 'circle' && (
+              <>
+                <Row label="Ctr" val={`${e.center[0].toFixed(2)}, ${e.center[1].toFixed(2)}`} />
+                <Row label="R" val={e.r.toFixed(3)} />
+                <Row label="Dia" val={(e.r*2).toFixed(3)} />
+                <Row label="Circ" val={(2*Math.PI*e.r).toFixed(3)} />
+              </>
+            )}
+            {e.type === 'arc' && (
+              <>
+                <Row label="Ctr" val={`${e.center[0].toFixed(2)}, ${e.center[1].toFixed(2)}`} />
+                <Row label="R" val={e.r.toFixed(3)} />
+                <Row label="SA" val={`${(e.startAngle*180/Math.PI).toFixed(1)}°`} />
+                <Row label="EA" val={`${(e.endAngle*180/Math.PI).toFixed(1)}°`} />
+              </>
+            )}
+            {e.type === 'rect' && (
+              <>
+                <Row label="P1" val={`${e.p1[0].toFixed(2)}, ${e.p1[1].toFixed(2)}`} />
+                <Row label="P2" val={`${e.p2[0].toFixed(2)}, ${e.p2[1].toFixed(2)}`} />
+                <Row label="W" val={Math.abs(e.p2[0]-e.p1[0]).toFixed(3)} />
+                <Row label="H" val={Math.abs(e.p2[1]-e.p1[1]).toFixed(3)} />
+              </>
+            )}
+            {e.type === 'polyline' && (
+              <>
+                <Row label="Pts" val={e.points.length} />
+                <Row label="Closed" val={e.closed ? 'Yes' : 'No'} />
+              </>
+            )}
+            {/* color */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 4 }}>
+              <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.6rem', color: 'var(--text-dim)', minWidth: 32 }}>Color</span>
+              <input type="color" value={e.color || '#c4b0ff'} onChange={ev => setColor(ev.target.value)}
+                style={{ width: 32, height: 20, border: 'none', background: 'none', cursor: 'pointer', padding: 0 }} />
+              <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.58rem', color: 'var(--text-secondary)' }}>{e.color}</span>
+            </div>
+            <button onClick={deleteSelected}
+              style={{ marginTop: 4, padding: '4px', background: 'rgba(255,102,136,0.08)', border: '1px solid rgba(255,102,136,0.28)', color: '#ff6688', fontFamily: 'var(--font-mono)', fontSize: '0.6rem', borderRadius: 3, cursor: 'pointer', letterSpacing: '0.07em' }}>
+              ✕ Delete
+            </button>
+          </div>
+        ) : (
+          <div style={{ fontFamily: 'var(--font-mono)', fontSize: '0.62rem', color: 'var(--text-dim)', lineHeight: 1.8, marginTop: 4 }}>
+            No selection<br />
+            <span style={{ fontSize: '0.55rem' }}>Click an entity to inspect</span>
+          </div>
+        )}
+      </div>
+
+      {/* Entity list */}
+      <div style={{ flex: 1, overflowY: 'auto', padding: '6px 8px' }}>
+        <div style={{ fontFamily: 'var(--font-mono)', fontSize: '0.52rem', color: 'var(--text-dim)', letterSpacing: '0.14em', textTransform: 'uppercase', marginBottom: 4 }}>
+          Entities ({entities.length})
+        </div>
+        {entities.length === 0 && (
+          <div style={{ fontFamily: 'var(--font-mono)', fontSize: '0.6rem', color: 'var(--text-dim)', textAlign: 'center', padding: '16px 0' }}>
+            Draw with the 2D tools above
+          </div>
+        )}
+        {entities.map(en => (
+          <div key={en.id}
+            onClick={() => setSelectedId(en.id === selectedId ? null : en.id)}
+            style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '4px 5px', marginBottom: 1,
+              background: selectedId === en.id ? 'var(--lavender-dim)' : 'transparent',
+              border: `1px solid ${selectedId === en.id ? 'var(--border-active)' : 'transparent'}`,
+              borderRadius: 3, cursor: 'pointer', transition: 'all 100ms' }}
+            onMouseEnter={ev => { if (selectedId !== en.id) ev.currentTarget.style.background = 'var(--bg-elevated)' }}
+            onMouseLeave={ev => { if (selectedId !== en.id) ev.currentTarget.style.background = 'transparent' }}
+          >
+            <div style={{ width: 7, height: 7, borderRadius: '50%', background: en.color || '#c4b0ff', flexShrink: 0 }} />
+            <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.65rem', color: 'var(--text-primary)', textTransform: 'uppercase', flex: 1 }}>{en.type}</span>
+            <button onClick={ev => { ev.stopPropagation(); setEntities(p => p.filter(x => x.id !== en.id)); if (selectedId === en.id) setSelectedId(null) }}
+              style={{ background: 'none', border: 'none', color: 'var(--text-dim)', cursor: 'pointer', fontSize: '0.65rem', padding: '0 2px' }}
+              onMouseEnter={ev => ev.currentTarget.style.color = '#ff6688'}
+              onMouseLeave={ev => ev.currentTarget.style.color = 'var(--text-dim)'}
+            >✕</button>
+          </div>
+        ))}
+        {entities.length > 0 && (
+          <button onClick={() => { setEntities([]); setSelectedId(null) }}
+            style={{ width: '100%', marginTop: 6, padding: '4px', background: 'rgba(255,102,136,0.05)', border: '1px solid rgba(255,102,136,0.18)', color: 'rgba(255,102,136,0.55)', fontFamily: 'var(--font-mono)', fontSize: '0.58rem', borderRadius: 3, cursor: 'pointer' }}>
+            Clear All
+          </button>
+        )}
+      </div>
+
+      {/* Mode hint */}
+      <div style={{ padding: '6px 10px', borderTop: '1px solid var(--border-subtle)', flexShrink: 0 }}>
+        <div style={{ fontFamily: 'var(--font-mono)', fontSize: '0.55rem', color: 'var(--text-dim)', lineHeight: 1.7 }}>
+          Active: <span style={{ color: 'var(--cyan)' }}>{mode}</span><br />
+          Scroll: zoom  ·  MMB: pan<br />
+          RMB / Dbl-click: finish line
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function Row({ label, val }) {
+  return (
+    <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8 }}>
+      <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.6rem', color: 'var(--text-dim)', minWidth: 32 }}>{label}</span>
+      <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.6rem', color: 'var(--text-primary)' }}>{val}</span>
+    </div>
+  )
+}
+
 /* ── Main Studio ── */
 function StudioInner() {
   const { projectId } = useParams()
@@ -1748,6 +1895,8 @@ function StudioInner() {
   const [showProfile,     setShowProfile]      = useState(false)
   const [cursorPos,       setCursorPos]        = useState({ x: 0, y: 0 })
   const [ctxMenu,         setCtxMenu]          = useState(null)  // { x, y, objectId }
+  const [entities2d,      setEntities2d]       = useState([])
+  const [selectedEntity2d, setSelectedEntity2d] = useState(null)
   const meshRefs          = useRef({})
   const rightClickedIdRef = useRef(null)
 
@@ -1762,6 +1911,7 @@ function StudioInner() {
   const showRightPanel  = useCADStore(s => s.showRightPanel)
   const toggleRight     = useCADStore(s => s.toggleRightPanel)
   const studioMode      = useCADStore(s => s.studioMode)
+  const activeMode      = useCADStore(s => s.activeMode)
   const setCameraPreset = useCADStore(s => s.setCameraPreset)
 
   const aiStatus = useAIGeneration(s => s.status)
@@ -1838,93 +1988,101 @@ function StudioInner() {
         <PanelNub side="left" icon="▶" label="Tree" onClick={toggleTree} />
       )}
 
-      {/* 3D Viewport */}
-      <div
-        style={{ gridArea: 'viewport', position: 'relative', overflow: 'hidden',
-          background: isAIMode ? '#090A0F' : 'var(--bg-void)',
-          cursor: 'none',
-          transition: 'background 400ms ease',
-        }}
-        onClick={handleViewportClick}
-        onMouseMove={handleMouseMove}
-        onContextMenu={e => {
-          e.preventDefault()
-          if (rightClickedIdRef.current) {
-            rightClickedIdRef.current = null  // already handled in handleObjectContextMenu
-          } else {
-            setCtxMenu({ x: e.clientX, y: e.clientY, objectId: null })
-          }
-        }}
-      >
-        <Canvas
-          camera={{ position:[6, 5, 8], fov: 50 }}
-          gl={{ antialias: true, alpha: false, toneMapping: THREE.ACESFilmicToneMapping, toneMappingExposure: 1.3 }}
-          shadows
-          dpr={[1, 2]}
-          style={{ width:'100%', height:'100%' }}
+      {/* Viewport — 2D canvas or 3D scene depending on activeMode */}
+      {activeMode === '2d' ? (
+        <div style={{ gridArea: 'viewport', position: 'relative', overflow: 'hidden' }}>
+          <Canvas2D
+            entities={entities2d}
+            setEntities={setEntities2d}
+            selectedId={selectedEntity2d}
+            setSelectedId={setSelectedEntity2d}
+          />
+        </div>
+      ) : (
+        <div
+          style={{ gridArea: 'viewport', position: 'relative', overflow: 'hidden',
+            background: isAIMode ? '#090A0F' : 'var(--bg-void)',
+            cursor: 'none',
+            transition: 'background 400ms ease',
+          }}
+          onClick={handleViewportClick}
+          onMouseMove={handleMouseMove}
+          onContextMenu={e => {
+            e.preventDefault()
+            if (rightClickedIdRef.current) {
+              rightClickedIdRef.current = null
+            } else {
+              setCtxMenu({ x: e.clientX, y: e.clientY, objectId: null })
+            }
+          }}
         >
-          <color attach="background" args={[isAIMode ? '#090A0F' : '#060612']} />
-          <fog  attach="fog"         args={[isAIMode ? '#090A0F' : '#060612', 24, 48]} />
-          <Suspense fallback={null}>
-            <ViewportScene
-              selectedId={selectedId}
-              onSelect={setSelectedId}
-              meshRefs={meshRefs}
-              onObjectContextMenu={handleObjectContextMenu}
-            />
-          </Suspense>
-        </Canvas>
+          <Canvas
+            camera={{ position:[6, 5, 8], fov: 50 }}
+            gl={{ antialias: true, alpha: false, toneMapping: THREE.ACESFilmicToneMapping, toneMappingExposure: 1.3 }}
+            shadows
+            dpr={[1, 2]}
+            style={{ width:'100%', height:'100%' }}
+          >
+            <color attach="background" args={[isAIMode ? '#090A0F' : '#060612']} />
+            <fog  attach="fog"         args={[isAIMode ? '#090A0F' : '#060612', 24, 48]} />
+            <Suspense fallback={null}>
+              <ViewportScene
+                selectedId={selectedId}
+                onSelect={setSelectedId}
+                meshRefs={meshRefs}
+                onObjectContextMenu={handleObjectContextMenu}
+              />
+            </Suspense>
+          </Canvas>
 
-        <ViewportOverlay />
-        <ViewCube onPreset={setCameraPreset} />
-        <CrosshairOverlay pos={cursorPos} />
+          <ViewportOverlay />
+          <ViewCube onPreset={setCameraPreset} />
+          <CrosshairOverlay pos={cursorPos} />
 
-        {/* AI mode: studio-mode badge */}
-        {isAIMode && (
-          <div style={{ position: 'absolute', top: 12, right: 12, pointerEvents: 'none' }}>
-            <div style={{
-              padding: '4px 10px', borderRadius: 20,
-              background: studioMode === 'ai3d' ? 'rgba(0,240,255,0.1)' : 'rgba(139,92,246,0.12)',
-              border: `1px solid ${studioMode === 'ai3d' ? 'rgba(0,240,255,0.35)' : 'rgba(139,92,246,0.4)'}`,
-              fontFamily: 'var(--font-mono)', fontSize: '0.58rem',
-              color: studioMode === 'ai3d' ? '#00F0FF' : '#c4b0ff',
-              letterSpacing: '0.1em',
-            }}>
-              {studioMode === 'ai3d' ? '✦ AI 3D GENERATOR' : '⬢ GENERATIVE DESIGN'}
+          {isAIMode && (
+            <div style={{ position: 'absolute', top: 12, right: 12, pointerEvents: 'none' }}>
+              <div style={{
+                padding: '4px 10px', borderRadius: 20,
+                background: studioMode === 'ai3d' ? 'rgba(0,240,255,0.1)' : 'rgba(139,92,246,0.12)',
+                border: `1px solid ${studioMode === 'ai3d' ? 'rgba(0,240,255,0.35)' : 'rgba(139,92,246,0.4)'}`,
+                fontFamily: 'var(--font-mono)', fontSize: '0.58rem',
+                color: studioMode === 'ai3d' ? '#00F0FF' : '#c4b0ff',
+                letterSpacing: '0.1em',
+              }}>
+                {studioMode === 'ai3d' ? '✦ AI 3D GENERATOR' : '⬢ GENERATIVE DESIGN'}
+              </div>
             </div>
-          </div>
-        )}
-
-        {/* AI generation progress bar at top of viewport */}
-        {aiStatus === 'generating' && (
-          <GenerationProgressBar />
-        )}
-
-        {/* Claude-style floating prompt bar */}
-        <AnimatePresence>
-          {studioMode === 'ai3d' && (
-            <AIPromptBar visible={true} onGenerate={() => {}} />
           )}
-        </AnimatePresence>
-      </div>
+
+          {aiStatus === 'generating' && <GenerationProgressBar />}
+
+          <AnimatePresence>
+            {studioMode === 'ai3d' && (
+              <AIPromptBar visible={true} onGenerate={() => {}} />
+            )}
+          </AnimatePresence>
+        </div>
+      )}
 
       {/* Right: Properties / AI / GenDesign panel or collapsed nub */}
       {showRightPanel ? (
         <div style={{ gridArea: 'rightpanel', borderLeft: '1px solid var(--border-subtle)', overflow: 'hidden', display: 'flex', flexDirection: 'column', background: 'var(--bg-surface)' }}>
-          {/* Right panel collapse button */}
           <div style={{ display: 'flex', justifyContent: 'flex-start', padding: '4px 4px 0', flexShrink: 0, borderBottom: '1px solid var(--border-subtle)' }}>
             <button onClick={toggleRight} title="Collapse panel"
               style={{ background: 'none', border: 'none', color: 'var(--text-dim)', cursor: 'pointer', fontSize: '0.65rem', padding: '2px 5px', borderRadius: 2 }}>▶</button>
           </div>
           <div style={{ flex: 1, overflow: 'hidden' }}>
-            {studioMode === 'cad'       && <RightPanel selectedId={selectedId} onDeselect={() => setSelectedId(null)} />}
-            {studioMode === 'ai3d'      && <Generation3DPanel />}
-            {studioMode === 'gendesign' && <GenerativeDesignPanel />}
+            {activeMode === '2d'
+              ? <Properties2D entities={entities2d} selectedId={selectedEntity2d} setEntities={setEntities2d} setSelectedId={setSelectedEntity2d} />
+              : studioMode === 'cad'       ? <RightPanel selectedId={selectedId} onDeselect={() => setSelectedId(null)} />
+              : studioMode === 'ai3d'      ? <Generation3DPanel />
+              : <GenerativeDesignPanel />
+            }
           </div>
         </div>
       ) : (
         <PanelNub side="right" icon="◀"
-          label={studioMode === 'ai3d' ? 'AI Gen' : studioMode === 'gendesign' ? 'Gen Design' : 'Props'}
+          label={activeMode === '2d' ? '2D Props' : studioMode === 'ai3d' ? 'AI Gen' : studioMode === 'gendesign' ? 'Gen Design' : 'Props'}
           onClick={toggleRight}
         />
       )}

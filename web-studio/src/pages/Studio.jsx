@@ -99,11 +99,7 @@ function CADObject({ obj, selected, onClick, onRef, onContextMenu: onCtx }) {
     return () => onRef?.(obj.id, null)
   }, [obj.id])
 
-  useFrame(({ clock }) => {
-    if (groupRef.current && selected) {
-      groupRef.current.position.y = obj.position[1] + Math.sin(clock.getElapsedTime() * 2.5) * 0.04
-    }
-  })
+  // bob animation removed — it overrode Y every frame and blocked Y-axis transform
 
   if (obj.visible === false) return null
 
@@ -212,9 +208,14 @@ function OriginMarker() {
 }
 
 /* ── Transform Gizmo (inside Canvas) ── */
-function SelectionGizmo({ selectedRef, transformMode }) {
-  const tcRef     = useRef(null)
+function SelectionGizmo({ selectedRef, transformMode, selectedId }) {
+  const tcRef = useRef(null)
   const { invalidate } = useThree()
+  const updateObject = useCADStore(s => s.updateObject)
+
+  // Ref so event handlers always see latest values without re-binding
+  const S = useRef(null)
+  S.current = { transformMode, selectedRef, selectedId, updateObject }
 
   useEffect(() => {
     const tc = tcRef.current
@@ -227,6 +228,19 @@ function SelectionGizmo({ selectedRef, transformMode }) {
       const controls = tc.domElement?.__r3f?.orbitControls
       if (controls) controls.enabled = true
       invalidate()
+      // Commit final transform into the CAD store
+      const { transformMode, selectedRef: ref, selectedId: id, updateObject: upd } = S.current
+      if (!ref || !id) return
+      if (transformMode === 'translate') {
+        const p = ref.position
+        upd(id, { position: [p.x, p.y, p.z] })
+      } else if (transformMode === 'rotate') {
+        const r = ref.rotation
+        upd(id, { rotation: [r.x, r.y, r.z] })
+      } else if (transformMode === 'scale') {
+        const s = ref.scale
+        upd(id, { scale: [s.x, s.y, s.z] })
+      }
     }
     tc.addEventListener('mouseDown', onStart)
     tc.addEventListener('mouseUp',   onEnd)
@@ -457,7 +471,7 @@ function ViewportScene({ selectedId, onSelect, meshRefs, onObjectContextMenu }) 
 
       {/* TransformControls gizmo for selected object in SELECT mode */}
       {mode === 'SELECT' && selectedId && (
-        <SelectionGizmo selectedRef={selectedRef} transformMode={transformMode} />
+        <SelectionGizmo selectedRef={selectedRef} transformMode={transformMode} selectedId={selectedId} />
       )}
 
       <GizmoHelper alignment="bottom-right" margin={[72, 72]}>
@@ -2009,11 +2023,7 @@ function StudioInner() {
           onMouseMove={handleMouseMove}
           onContextMenu={e => {
             e.preventDefault()
-            if (rightClickedIdRef.current) {
-              rightClickedIdRef.current = null
-            } else {
-              setCtxMenu({ x: e.clientX, y: e.clientY, objectId: null })
-            }
+            rightClickedIdRef.current = null
           }}
         >
           <Canvas

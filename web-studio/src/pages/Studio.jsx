@@ -277,8 +277,9 @@ function CameraAnimator({ orbitRef }) {
 
 /* ── AI Generation mesh preview (inside Canvas) ── */
 function GenerationMesh() {
-  const status   = useAIGeneration(s => s.status)
-  const progress = useAIGeneration(s => s.progress)
+  const status        = useAIGeneration(s => s.status)
+  const progress      = useAIGeneration(s => s.progress)
+  const objectsPlaced = useAIGeneration(s => s.objectsPlaced)
   const meshRef  = useRef(null)
   const groupRef = useRef(null)
 
@@ -286,6 +287,8 @@ function GenerationMesh() {
     if (groupRef.current) groupRef.current.rotation.y += delta * 0.25
   })
 
+  // Hide once actual objects have been placed into the scene
+  if (objectsPlaced) return null
   if (status !== 'generating' && status !== 'complete') return null
 
   const pct       = progress / 100

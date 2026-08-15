@@ -8,7 +8,8 @@ const projectsRouter = require('./routes/projects')
 const app  = express()
 const PORT = process.env.PORT || 4000
 
-app.use(cors({ origin: 'http://localhost:5174', credentials: true }))
+const allowedOrigins = (process.env.CORS_ORIGIN ?? 'http://localhost:5174').split(',').map(s => s.trim())
+app.use(cors({ origin: allowedOrigins, credentials: true }))
 app.use(express.json())
 app.use(cookieParser())
 

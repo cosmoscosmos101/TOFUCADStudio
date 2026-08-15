@@ -1,7 +1,7 @@
 import { create } from 'zustand'
 import { useCADStore } from './useCADStore'
 
-const API = 'http://localhost:4000/api'
+const API = import.meta.env.VITE_API_URL ?? 'http://localhost:4000/api'
 
 export const useGitStore = create((set, get) => ({
   // ── Persistence state ──
